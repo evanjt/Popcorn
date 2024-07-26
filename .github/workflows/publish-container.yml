@@ -6,9 +6,8 @@ name: CI
 on:
   push:
     branches:
-      - main
-    # Publish semver tags as releases.
-    tags: [ '*.*.*' ]
+      - '**'
+    tags: [ '**' ]
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -87,5 +86,3 @@ jobs:
         # This step uses the identity token to provision an ephemeral certificate
         # against the sigstore community Fulcio instance.
         run: echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign --yes {}@${{ steps.build-and-push.outputs.digest }}
-
-
