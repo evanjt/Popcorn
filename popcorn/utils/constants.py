@@ -19,6 +19,7 @@ large_file_paths = [
         "/cluster/work/igp_psr/metzgern/HAC/data",
         "/cluster/scratch/metzgern",
         os.path.join(os.getcwd(), 'inputs', 'data'),
+        "/inputs/data",
 ]
 large_file_path = None
 for name in large_file_paths:
@@ -38,6 +39,7 @@ raw_file_paths = [
         "/cluster/work/igp_psr/metzgern/HAC/data",
         "/cluster/scratch/metzgern",
         os.path.join(os.getcwd(), 'inputs', 'raw'),
+        "/inputs/raw",
 ]
 for name in raw_file_paths:
     if os.path.isdir(name):
@@ -54,6 +56,7 @@ data_paths_aux = [
         "/scratch2/metzgern/HAC/data",
         "/cluster/work/igp_psr/metzgern/HAC/data",
         os.path.join(os.getcwd(), 'inputs', 'aux'),
+        "/inputs/aux",
 ]
 data_path_aux = None
 for name in data_paths_aux:
