@@ -17,8 +17,10 @@ large_file_paths = [
         "/scratch2/metzgern/HAC/data",
         "/scratch/metzgern/HAC/data",
         "/cluster/work/igp_psr/metzgern/HAC/data",
-        "/cluster/scratch/metzgern"
+        "/cluster/scratch/metzgern",
+        os.path.join(os.getcwd(), 'inputs', 'data'),
 ]
+large_file_path = None
 for name in large_file_paths:
     if os.path.isdir(name):
         large_file_path = name
@@ -34,13 +36,14 @@ raw_file_paths = [
         "/scratch2/metzgern/HAC/data",
         "/scratch/metzgern/HAC/data",
         "/cluster/work/igp_psr/metzgern/HAC/data",
-        "/cluster/scratch/metzgern"
+        "/cluster/scratch/metzgern",
+        os.path.join(os.getcwd(), 'inputs', 'raw'),
 ]
 for name in raw_file_paths:
     if os.path.isdir(name):
         raw_file_path = name
 if raw_file_path is None:
-    raise Exception("No data folder found")
+    raise Exception("No raw data folder found")
 raw_map_root = os.path.join(raw_file_path, os.path.join("PopMapData", "raw"))
 rawEE_map_root = os.path.join(raw_map_root, "EE")
 print("rawEE_map_root", rawEE_map_root)
@@ -50,12 +53,14 @@ data_paths_aux = [
         "/scratch/metzgern/HAC/data",
         "/scratch2/metzgern/HAC/data",
         "/cluster/work/igp_psr/metzgern/HAC/data",
+        os.path.join(os.getcwd(), 'inputs', 'aux'),
 ]
+data_path_aux = None
 for name in data_paths_aux:
     if os.path.isdir(name):
         data_path_aux = name
-if large_file_path is None:
-    raise Exception("No data folder found")
+if data_path_aux is None:
+    raise Exception("No aux data folder found")
 pop_gbuildings_path = os.path.join(data_path_aux, os.path.join("PopMapData", os.path.join("raw", "GoogleBuildings")))
 print("pop_gbuildings_path", pop_gbuildings_path)
 
@@ -98,7 +103,7 @@ datalocations = {
         'coarse': {
             'boundary': "boundaries_coarse.tif",
             'census': "census_coarse.csv",
-        } 
+        }
     },
     "uga": {
         'coarse': {
@@ -177,4 +182,3 @@ DATALOADER = Namespace(SENTINEL1_BANDS=['VV', 'VH'], SENTINEL2_BANDS=['B02', 'B0
 TRAINER = Namespace(LR=1e5)
 dda_cfg = Namespace(MODEL=MODEL, CONSISTENCY_TRAINER=CONSISTENCY_TRAINER, PATHS=PATHS,
                 DATALOADER=DATALOADER, TRAINER=TRAINER, NAME=f"fusionda_newAug{stage1feats}_{stage2feats}")
-

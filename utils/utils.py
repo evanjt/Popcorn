@@ -13,7 +13,6 @@ import torch
 from tqdm import tqdm
 from random import randrange
 import time
-from pylab import figure, imshow, matshow, grid, savefig, colorbar
 import pandas as pd
 import matplotlib.pyplot as plt
 import json
