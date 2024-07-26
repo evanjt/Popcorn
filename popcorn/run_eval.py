@@ -36,8 +36,17 @@ class Trainer:
     def __init__(self, args: argparse.Namespace):
         self.args = args
 
+        if not args.resume:
+            raise ValueError("Need to provide a checkpoint to resume from")
+
         # set up experiment folder
-        self.args.experiment_folder = os.path.join(os.path.dirname(args.resume[0]), "eval_outputs_ensemble_{}_members_{}".format(time.strftime("%Y%m%d-%H%M%S"), len(args.resume)))
+        self.args.experiment_folder = os.path.join(
+            os.path.dirname(args.resume[0]),
+            "eval_outputs_ensemble_{}_members_{}".format(
+                time.strftime("%Y%m%d-%H%M%S"),
+                len(args.resume)
+            )
+        )
         self.experiment_folder = self.args.experiment_folder
         print("Experiment folder:", self.experiment_folder)
 
@@ -49,14 +58,14 @@ class Trainer:
 
         # set up dataloaders
         self.dataloaders = self.get_dataloaders(self, args)
-        
+
         # define architecture
         self.model = []
-        for _ in args.resume: 
+        for _ in args.resume:
             model_kwargs = get_model_kwargs(args, args.model)
             model = model_dict[args.model](**model_kwargs).cuda()
-            self.model.append(model) 
-        
+            self.model.append(model)
+
         # wandb config
         wandb.init(project=args.wandb_project, dir=self.args.experiment_folder)
         wandb.config.update(self.args)
@@ -74,15 +83,15 @@ class Trainer:
 
 
     def test_target(self, save=False, full=False):
-        
+
         # Test on target domain
         for j in range(len(self.model)):
             self.model[j].eval()
         self.test_stats = defaultdict(float)
 
-        with torch.no_grad(): 
+        with torch.no_grad():
             self.target_test_stats = defaultdict(float)
-            for testdataloader in self.dataloaders["test_target"]: 
+            for testdataloader in self.dataloaders["test_target"]:
 
                 # inputialize the output map
                 h, w = testdataloader.dataset.shape()
@@ -91,8 +100,8 @@ class Trainer:
                 output_map_count = torch.zeros((h, w), dtype=torch.int16)
 
                 # if len(self.model) > 1:
-                output_map_squared = torch.zeros((h, w), dtype=torch.float32) 
-                output_scale_map_squared = torch.zeros((h, w), dtype=torch.float32) 
+                output_map_squared = torch.zeros((h, w), dtype=torch.float32)
+                output_scale_map_squared = torch.zeros((h, w), dtype=torch.float32)
 
                 for sample in tqdm(testdataloader, leave=True):
                     sample = to_cuda_inplace(sample)
@@ -118,7 +127,7 @@ class Trainer:
                             if this_output["scale"] is not None:
                                 scale[i] = this_output["scale"][0].cuda()
                                 scale_squared[i] = this_output["scale"][0].to(torch.float32).cuda()**2
-                    
+
                     output = {
                         "popdensemap": popdense.sum(dim=0, keepdim=True),
                         "popdensemap_squared": popdense_squared.sum(dim=0, keepdim=True)
@@ -127,7 +136,7 @@ class Trainer:
                         if this_output["scale"] is not None:
                             output["scale"] = scale.cuda().sum(dim=0, keepdim=True)
                             output["scale_squared"] = scale_squared.cuda().sum(dim=0, keepdim=True)
-                    
+
                     # save predictions to large map
                     output_map[xl:xl+ips, yl:yl+ips][mask.cpu()] += output["popdensemap"][0][mask].cpu().to(torch.float32)
                     output_map_squared[xl:xl+ips, yl:yl+ips][mask.cpu()] += output["popdensemap_squared"][0][mask].cpu().to(torch.float32)
@@ -142,7 +151,7 @@ class Trainer:
                 ###### average over the number of times each pixel was visited ######
                 print("averaging over the number of times each pixel was visited")
                 # mask out values that are not visited of visited exactly once
-                div_mask = output_map_count > 1 
+                div_mask = output_map_count > 1
 
                 a = output_map[div_mask] / output_map_count[div_mask].to(torch.float32)
                 output_map[div_mask] = output_map[div_mask] / output_map_count[div_mask].to(torch.float32)
@@ -168,8 +177,8 @@ class Trainer:
                     if "scale" in output.keys():
                         if output["scale"] is not None:
                             testdataloader.dataset.save(output_scale_map, self.experiment_folder, tag="SCALE_{}".format(testdataloader.dataset.region))
-                            testdataloader.dataset.save(output_scale_map_squared, self.experiment_folder, tag="SCALE_STD") 
-                
+                            testdataloader.dataset.save(output_scale_map_squared, self.experiment_folder, tag="SCALE_STD")
+
                 # convert populationmap to census
                 gpu_mode = True
                 for level in testlevels_eval[testdataloader.dataset.region]:
@@ -203,12 +212,12 @@ class Trainer:
 
                     self.target_test_stats = {**self.target_test_stats,
                                               **test_stats_adj}
-            
+
             # save the target test stats
             wandb.log({**{k + '/targettest': v for k, v in self.target_test_stats.items()}, **self.info}, self.info["iter"])
 
     @staticmethod
-    def get_dataloaders(self, args): 
+    def get_dataloaders(self, args):
         """
         Get dataloaders for the source and target domains
         Inputs:
@@ -235,13 +244,13 @@ class Trainer:
                                                        fourseasons=self.args.fourseasons, train_level=lvl, **input_defs)
                                 for reg,lvl in zip(args.target_regions, args.train_level) ]
         }
-        
+
         # create the dataloaders
         dataloaders =  {
             "test_target":  [DataLoader(datasets["test_target"], batch_size=1, num_workers=args.num_workers, shuffle=False, drop_last=False)
                                 for datasets["test_target"] in datasets["test_target"] ]
         }
-        
+
         return dataloaders
 
 
@@ -255,7 +264,7 @@ class Trainer:
 
         # load checkpoint
         checkpoint = torch.load(path)
-        self.model[j].load_state_dict(checkpoint['model']) 
+        self.model[j].load_state_dict(checkpoint['model'])
         self.info["epoch"] = checkpoint['epoch']
         self.info["iter"] = checkpoint['iter']
 
@@ -268,7 +277,7 @@ if __name__ == '__main__':
 
     trainer = Trainer(args)
 
-    since = time.time() 
+    since = time.time()
     trainer.test_target(save=True)
     time_elapsed = time.time() - since
     print('Evaluating completed in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
